@@ -1,0 +1,23 @@
+{
+  "name": "polerix-code-toolkit",
+  "version": "1.0.0",
+  "description": "Hardened, reusable engineering packages and templates extracted from the Polerix GitHub repository portfolio",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "node --test packages/**/tests/*.test.mjs"
+  },
+  "keywords": [
+    "polerix",
+    "toolkit",
+    "audio",
+    "navigation",
+    "calendar",
+    "sensors",
+    "templates"
+  ],
+  "author": "Polerix",
+  "license": "MIT"
+}

@@ -1,0 +1,31 @@
+{
+  "name": "desktop-shell-template",
+  "version": "1.0.0",
+  "description": "Portable retro desktop shell template with hardened IPC and tag-driven CI",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:all": "electron-builder --win --mac"
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.polerix.desktop-shell",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": ["portable", "dir"],
+      "forceCodeSigning": false
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "identity": null,
+      "hardenedRuntime": false
+    }
+  }
+}

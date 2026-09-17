@@ -1,0 +1,19 @@
+{
+  "name": "@polerix/browser-audio-capture",
+  "version": "1.0.0",
+  "description": "AudioWorklet PCM audio capture and uncompressed 16-bit WAV encoder",
+  "type": "module",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "keywords": [
+    "audio",
+    "audioworklet",
+    "pcm",
+    "wav",
+    "recorder"
+  ],
+  "author": "Polerix",
+  "license": "MIT"
+}

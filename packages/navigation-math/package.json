@@ -1,0 +1,20 @@
+{
+  "name": "@polerix/navigation-math",
+  "version": "1.0.0",
+  "description": "Pure spherical and route navigation math without DOM dependencies",
+  "type": "module",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "keywords": [
+    "navigation",
+    "spherical",
+    "route",
+    "bearing",
+    "distance",
+    "math"
+  ],
+  "author": "Polerix",
+  "license": "MIT"
+}
