@@ -10,7 +10,7 @@ const RULES = [
   ['slack-token', /\bxox[baprs]-[A-Za-z0-9-]{10,}/],
   ['twitch-oauth-token', /\boauth:[a-z0-9]{30}\b/],
   ['private-key', /-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/],
-  // <input type="password" ... value="something"> with a real default value
+  // a password-type input element that ships with a non-empty default value
   ['password-input-default', /<input\b[^>]*type=["']password["'][^>]*\bvalue=["'][^"']{6,}["']/i],
 ];
 const PLACEHOLDER = /(x{4,}|\*{3,}|your[_-]?|example|placeholder|changeme|<[^>]+>|\$\{)/i;
