@@ -17,6 +17,7 @@ import { parseArgs } from 'node:util';
 import { createClient } from './lib/github.mjs';
 import { auditRepo, isFileFix, isDependencyPath, textReferencesDeps } from './lib/checks.mjs';
 import { scanText, isScannable } from './lib/secrets.mjs';
+import { displayName, scrubMessage } from './lib/redact.mjs';
 import { parseManifest, findPins, bumpPins, latestWithin, latestOverall, parseSemver, compareSemver } from './lib/subscribe.mjs';
 
 const cfg = JSON.parse(fs.readFileSync(new URL('./config.json', import.meta.url)));
@@ -33,6 +34,8 @@ const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || execFileSync('
 const trailer = process.env.STEWARD_COMMIT_TRAILER ? `\n\n${process.env.STEWARD_COMMIT_TRAILER}` : '';
 const footer = process.env.STEWARD_PR_FOOTER ? `\n\n${process.env.STEWARD_PR_FOOTER}` : '';
 const gh = createClient(token, { attribution: trailer });
+const label = (r) => displayName(r.name, r.meta?.visibility, inCI);
+process.on('uncaughtException', (e) => { console.error(`steward error: ${scrubMessage(e.message, inCI)}`); process.exit(1); });
 const b64 = (s) => Buffer.from(s, 'base64').toString('utf8');
 
 async function listRepos() {
@@ -208,7 +211,7 @@ function report(results) {
       }
       return f.id;
     });
-    lines.push(`| ${r.name} | ${items.join(', ') || 'clean'} | ${r.subscribed ? 'yes' : r.optOut ? 'opted out' : 'no'} |`);
+    lines.push(`| ${label(r)} | ${items.join(', ') || 'clean'} | ${r.subscribed ? 'yes' : r.optOut ? 'opted out' : 'no'} |`);
   }
   const text = lines.join('\n');
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text + '\n');
@@ -219,11 +222,11 @@ const results = await auditAll();
 if (mode === 'apply') {
   for (const r of results.filter((x) => x.findings.length)) {
     const notes = await applyRepo(r);
-    if (notes.length) console.error(`${r.name}: ${notes.join('; ')}`);
+    if (notes.length) console.error(`${label(r)}: ${notes.join('; ')}`);
   }
 }
 console.log(report(results));
 // Non-zero on critical findings so GitHub emails the owner without the log revealing locations.
 const critical = results.filter((r) => r.findings.some((f) => f.severity === 'critical'));
-if (critical.length) console.error(`CRITICAL findings in: ${critical.map((r) => r.name).join(', ')}`);
+if (critical.length) console.error(`CRITICAL findings in: ${critical.map(label).join(', ')}`);
 process.exit(critical.length && inCI ? 1 : 0);

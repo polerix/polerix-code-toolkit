@@ -99,3 +99,23 @@ test('dependency guard: recognises dependency folders and site code that loads f
   assert.equal(textReferencesDeps('const a = 1; // no deps here'), false);
   assert.equal(textReferencesDeps('"node_modules/@esbuild/aix-ppc64": {'), true); // lockfiles are excluded by extension filter, not here
 });
+
+test('redact: private repo names are anonymised in CI only, public names and local runs are untouched', async () => {
+  const { displayName } = await import('../lib/redact.mjs');
+  assert.equal(displayName('secret-project', 'public', true), 'secret-project');
+  assert.equal(displayName('secret-project', 'private', false), 'secret-project');
+  const a = displayName('secret-project', 'private', true);
+  assert.match(a, /^private-[0-9a-f]{6}$/);
+  assert.ok(!a.includes('secret'));
+  assert.equal(a, displayName('secret-project', 'private', true));      // stable across runs
+  assert.notEqual(a, displayName('other-project', 'private', true));
+  assert.match(displayName('x', 'internal', true), /^private-/);         // anything not public is hidden
+});
+
+test('scrubMessage hides repo names in CI error text only', async () => {
+  const { scrubMessage } = await import('../lib/redact.mjs');
+  const msg = 'GET /repos/polerix/secret-project/git/trees/main?recursive=1 -> 500 boom';
+  assert.equal(scrubMessage(msg, true), 'GET /repos/<owner>/<repo>/git/trees/main?recursive=1 -> 500 boom');
+  assert.equal(scrubMessage(msg, false), msg);
+  assert.ok(!scrubMessage(msg, true).includes('secret-project'));
+});
