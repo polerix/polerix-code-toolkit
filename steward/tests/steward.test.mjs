@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { scanText, isScannable } from '../lib/secrets.mjs';
-import { auditRepo } from '../lib/checks.mjs';
+import { auditRepo, isDependencyPath, textReferencesDeps } from '../lib/checks.mjs';
 import { gitignoreFor, readmeFor, dependabotFor, securityPolicyFor } from '../lib/templates.mjs';
 import { parseSemver, compareSemver, satisfies, latestWithin, latestOverall, bumpPins, findPins, parseManifest } from '../lib/subscribe.mjs';
 
@@ -89,4 +89,13 @@ test('manifest parsing: valid, opt-out, malformed', () => {
   assert.deepEqual(parseManifest('{"toolkit":"^1","features":["web-core"],"steward":{"skip":["readme-missing"]}}'), { toolkit: '^1', features: ['web-core'], skip: ['readme-missing'] });
   assert.equal(parseManifest('{"steward":false}').skip, 'all');
   assert.equal(parseManifest('{nope'), null);
+});
+
+test('dependency guard: recognises dependency folders and site code that loads from them', () => {
+  for (const p of ['node_modules/a/b.js', 'x/node_modules/a.js', '.venv/lib/x.py', 'sub/venv/y.py']) assert.equal(isDependencyPath(p), true, p);
+  for (const p of ['src/venv.js', 'images/.DS_Store', 'node_modules_notes.md']) assert.equal(isDependencyPath(p), false, p);
+  assert.equal(textReferencesDeps('<script src="./node_modules/three/build/three.js"></script>'), true);
+  assert.equal(textReferencesDeps("import x from '/node_modules/x/index.js'"), true);
+  assert.equal(textReferencesDeps('const a = 1; // no deps here'), false);
+  assert.equal(textReferencesDeps('"node_modules/@esbuild/aix-ppc64": {'), true); // lockfiles are excluded by extension filter, not here
 });

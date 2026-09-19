@@ -46,4 +46,9 @@ export function auditRepo({ meta, paths, skip = [] }) {
   return out;
 }
 
+const DEPENDENCY_PATH = /(^|\/)(node_modules|\.venv|venv)\//;
+export const isDependencyPath = (p) => DEPENDENCY_PATH.test(p);
+// True when site source loads something from a dependency folder (so deleting it would break the site).
+export const textReferencesDeps = (text) => /(^|[^\w-])(\.\/|\/|\.\.\/)?node_modules\//.test(text);
+
 export const isFileFix = (f) => Boolean(f.fix?.add || f.fix?.remove);

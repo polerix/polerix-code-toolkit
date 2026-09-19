@@ -15,7 +15,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { createClient } from './lib/github.mjs';
-import { auditRepo, isFileFix } from './lib/checks.mjs';
+import { auditRepo, isFileFix, isDependencyPath, textReferencesDeps } from './lib/checks.mjs';
 import { scanText, isScannable } from './lib/secrets.mjs';
 import { parseManifest, findPins, bumpPins, latestWithin, latestOverall, parseSemver, compareSemver } from './lib/subscribe.mjs';
 
@@ -83,6 +83,22 @@ async function scanSecrets(repo) {
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 
+// A Pages site may load libraries straight from a tracked node_modules; deleting it would break the live site.
+async function protectServedDependencies(repo, findings) {
+  const junk = findings.find((f) => f.id === 'junk-tracked');
+  if (!junk || !repo.meta.hasPages || !junk.fix.remove.some(isDependencyPath)) return;
+  const sources = repo.paths.filter((p) => /\.(html?|m?js)$/.test(p) && !isDependencyPath(p) && !/(^|\/)(dist|docs\/assets)\//.test(p)).slice(0, 40);
+  for (const p of sources) {
+    const text = await readFile(repo, p);
+    if (text && textReferencesDeps(text)) {
+      junk.fix.remove = junk.fix.remove.filter((x) => !isDependencyPath(x));
+      junk.message += ` (dependency folders kept: ${p} references node_modules, review by hand)`;
+      if (!junk.fix.remove.length) findings.splice(findings.indexOf(junk), 1);
+      return;
+    }
+  }
+}
+
 async function planSubscription(repo, manifest, toolkitTags) {
   if (!manifest?.toolkit) return { findings: [], adds: [] };
   const target = latestWithin(toolkitTags, manifest.toolkit);
@@ -112,6 +128,7 @@ async function auditAll() {
     if (repo.paths.includes('polerix.json')) manifest = parseManifest(await readFile(repo, 'polerix.json') ?? '');
     const skip = manifest?.skip ?? [];
     const findings = auditRepo({ meta: repo.meta, paths: repo.paths, skip });
+    await protectServedDependencies(repo, findings);
     const sub = skip === 'all' ? { findings: [] } : await planSubscription(repo, manifest, tags);
     findings.push(...sub.findings.filter((f) => skip === 'all' || !skip.includes(f.id)));
     let secrets = { skipped: true, hits: [] };
@@ -146,6 +163,7 @@ async function applyRepo(res) {
     else {
       const body = [`Automated housekeeping by the Polerix steward.`, '',
         ...res.findings.filter(isFileFix).map((f) => `- **${f.id}**: ${f.message}`), '',
+        ...(removes.some(isDependencyPath) ? ['**After merging:** pulling this deletes the tracked `node_modules`/venv folders from your local copy. Run `npm install` (or recreate the venv) afterwards.', ''] : []),
         'Review, then merge or close. Closing declines these findings until they change.', marker].join('\n') + footer;
       await gh.commitChanges(cfg.owner, res.name, { base: res.meta.branch, branch: cfg.branch, adds, removes, message: `chore(steward): ${ids.join(', ')}` });
       if (open) { await gh.request('PATCH', `/repos/${cfg.owner}/${res.name}/pulls/${open.number}`, { body }); notes.push(`updated PR #${open.number}`); }
