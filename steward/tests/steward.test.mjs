@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+const FAKE_AWS = 'AKIA' + 'ABCDEFGHIJKLMNOP'; // assembled at runtime so the steward's own scan doesn't flag this file
 import { scanText, isScannable } from '../lib/secrets.mjs';
 import { auditRepo, isDependencyPath, textReferencesDeps } from '../lib/checks.mjs';
 import { gitignoreFor, readmeFor, dependabotFor, securityPolicyFor } from '../lib/templates.mjs';
@@ -9,7 +10,7 @@ const meta = (o = {}) => ({ name: 'demo', owner: 'polerix', description: 'A demo
 
 test('secrets: detects known formats and never returns the value', () => {
   const fake = 'oauth:' + 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5';
-  const hits = scanText(`line1\nconst t = "${fake}";\n<input id="x" type="password" value="hunter2hunter2">`);
+  const hits = scanText(`line1\nconst t = "${fake}";\n<input id="x" type="${'pass' + 'word'}" value="hunter2hunter2">`);
   assert.deepEqual(hits.map((h) => [h.line, h.rule]), [[2, 'twitch-oauth-token'], [3, 'password-input-default']]);
   assert.ok(!JSON.stringify(hits).includes('a1b2c3'));
   assert.ok(!JSON.stringify(hits).includes('hunter2'));
@@ -18,8 +19,8 @@ test('secrets: detects known formats and never returns the value', () => {
 test('secrets: placeholders, empty defaults and minified lines are ignored', () => {
   assert.deepEqual(scanText('<input type="password" value="">'), []);
   assert.deepEqual(scanText('token = "sk-ant-xxxxxxxxxxxxxxxxxxxxxxxx"'), []);
-  assert.deepEqual(scanText('a'.repeat(6000) + 'AKIAABCDEFGHIJKLMNOP'), []);
-  assert.equal(scanText('k=AKIAABCDEFGHIJKLMNOP').length, 1);
+  assert.deepEqual(scanText('a'.repeat(6000) + '' + FAKE_AWS + ''), []);
+  assert.equal(scanText('k=' + FAKE_AWS + '').length, 1);
 });
 
 test('secrets: scannable paths skip vendored/minified/binary', () => {
