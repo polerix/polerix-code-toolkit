@@ -1,0 +1,42 @@
+{
+  "toolkitVersion": "1.1.0",
+  "cdn": "https://cdn.jsdelivr.net/gh/polerix/polerix-code-toolkit@v{version}/packages/{package}/{file}",
+  "packages": [
+    {
+      "name": "@polerix/atlantic-date-core",
+      "package": "atlantic-date-core",
+      "version": "1.0.0",
+      "description": "Atlantic timezone calendar calculations, holiday cycles, deterministic daily rotations, and bingo cards",
+      "entry": "index.mjs"
+    },
+    {
+      "name": "@polerix/browser-audio-capture",
+      "package": "browser-audio-capture",
+      "version": "1.0.0",
+      "description": "AudioWorklet PCM audio capture and uncompressed 16-bit WAV encoder",
+      "entry": "index.mjs"
+    },
+    {
+      "name": "@polerix/mobile-capability-gate",
+      "package": "mobile-capability-gate",
+      "version": "1.0.0",
+      "description": "Progressive sensor permission handshake, orientation validation, and fullscreen normalizer",
+      "entry": "index.mjs"
+    },
+    {
+      "name": "@polerix/navigation-math",
+      "package": "navigation-math",
+      "version": "1.0.0",
+      "description": "Pure spherical and route navigation math without DOM dependencies",
+      "entry": "index.mjs"
+    },
+    {
+      "name": "@polerix/web-core",
+      "package": "web-core",
+      "version": "1.0.0",
+      "description": "Shared browser runtime for Polerix sites: capability detection and adaptation, HiDPI canvas, game loop, audio unlock, unified input actions, safe storage, cross-window sync, and HTML-escaping security helpers",
+      "entry": "index.mjs",
+      "style": "web-core.css"
+    }
+  ]
+}

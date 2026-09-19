@@ -1,0 +1,13 @@
+{
+  "owner": "polerix",
+  "toolkitRepo": "polerix-code-toolkit",
+  "branch": "steward/housekeeping",
+  "skipRepos": [],
+  "maxRepoSizeKbForSecretScan": 300000,
+  "secretIgnore": {
+    "purgeclock": [
+      "download.html"
+    ]
+  },
+  "_secretIgnoreNote": "purgeclock/download.html is a saved third-party page (UnZip & Viewer Online); the Google key in it is not ours."
+}

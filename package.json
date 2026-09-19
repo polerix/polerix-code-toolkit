@@ -1,13 +1,17 @@
 {
   "name": "polerix-code-toolkit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Hardened, reusable engineering packages and templates extracted from the Polerix GitHub repository portfolio",
   "private": true,
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "test": "node --test packages/**/tests/*.test.mjs"
+    "test": "node --test packages/*/tests/*.test.mjs steward/tests/*.test.mjs",
+    "steward:audit": "node steward/steward.mjs audit",
+    "steward:apply": "node steward/steward.mjs apply",
+    "registry": "node scripts/build-registry.mjs",
+    "registry:check": "node scripts/build-registry.mjs --check"
   },
   "keywords": [
     "polerix",
@@ -16,7 +20,10 @@
     "navigation",
     "calendar",
     "sensors",
-    "templates"
+    "templates",
+    "web-core",
+    "security",
+    "steward"
   ],
   "author": "Polerix",
   "license": "MIT"
