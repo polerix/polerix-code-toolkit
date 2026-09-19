@@ -19,3 +19,19 @@
 ### 3. Non-Destructive Automation
 - **Opt-In Mutation**: Synchronization and release scripts must default to non-destructive inspection (`--dry-run` or `--plan`).
 - **Gated Publishing**: GitHub Actions release workflows must trigger only on version tags (`refs/tags/v*`), never on standard branch pushes.
+
+### 4. Untrusted Text Never Reaches `innerHTML`
+- Chat messages, usernames, colours, URLs, file names, imported JSON and query strings are attacker-controlled. Interpolating them into `innerHTML` lets any visitor (or any chat viewer) run script in the page.
+- Use `textContent`, or `escapeHtml` / `html` from `@polerix/web-core`; validate CSS values with `safeColor` and links with `safeUrl`.
+- Origin of this rule: bus-broadcaster rendered Twitch chat text unescaped, in the same origin that stores the OBS password and Twitch token.
+
+### 5. Secrets Never Live in Web Storage or Markup
+- `localStorage` is readable by any script on the origin. `btoa()` is encoding, not encryption. Keep tokens in memory for the session, or behind a server-side proxy.
+- Never give a password/token `<input>` a default `value`.
+- Anything ever committed, even for one commit, must be treated as leaked: **revoke it first**, then remove it. Removing a line does not remove it from git history or clones.
+
+### 6. Supply Chain
+- Pin GitHub Actions to full commit SHAs with the version in a trailing comment. Give workflows `permissions: contents: read` unless a job needs more.
+- Import shared code only from an exact toolkit tag (`@vX.Y.Z`), never `@main` or an unpinned URL. Tags are immutable: publish a new version instead of moving one.
+- Ship a Content-Security-Policy on every static page (`buildCsp` / `cspMetaTag`). Prefer `scriptHashes` over `inlineScripts`.
+- Enable GitHub secret scanning and push protection on every public repo. The steward (`docs/steward.md`) enforces this. Note GitHub does not recognise every token format (it did not flag a Twitch OAuth token), so the steward runs its own scan as well.

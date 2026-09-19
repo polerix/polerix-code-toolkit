@@ -1,0 +1,59 @@
+name: Steward
+
+# Autonomous housekeeping for every repo in the account:
+#   - opens one reviewable PR per repo (.gitignore, README, SECURITY.md, Dependabot, tracked junk)
+#   - enables GitHub secret scanning + push protection on public repos
+#   - bumps shared-feature pins for repos subscribed via polerix.json
+#   - fails the run (so GitHub emails you) if any secret is found; the public log never says where
+# New repos are picked up automatically. Opt a repo out with {"steward": false} in its polerix.json.
+# Never pushes to a default branch. Needs the STEWARD_TOKEN secret: see docs/steward.md.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'        # Mondays 06:17 UTC
+  release:
+    types: [published]          # a new toolkit release propagates to subscribers
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: audit = report only, apply = open PRs / change settings
+        type: choice
+        options: [audit, apply]
+        default: audit
+      repo:
+        description: Limit to one repo name (optional)
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: steward
+  cancel-in-progress: false
+
+jobs:
+  steward:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Verify the steward itself before it touches anything
+        run: npm test
+      - name: Run steward
+        env:
+          GH_TOKEN: ${{ secrets.STEWARD_TOKEN }}
+          MODE: ${{ github.event.inputs.mode || 'apply' }}
+          ONLY_REPO: ${{ github.event.inputs.repo }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::STEWARD_TOKEN secret is not set. See docs/steward.md."
+            exit 1
+          fi
+          if [ -n "$ONLY_REPO" ]; then
+            node steward/steward.mjs "$MODE" --repo "$ONLY_REPO"
+          else
+            node steward/steward.mjs "$MODE"
+          fi

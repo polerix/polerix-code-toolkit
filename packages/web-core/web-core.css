@@ -1,0 +1,32 @@
+/* @polerix/web-core: pair with initAdaptive(), which sets these classes on <html>. */
+
+/* Full-height layouts that respect the mobile URL bar and the notch / home bar. */
+.wc-fill { height: 100vh; height: 100dvh; }
+.wc-safe-pad {
+  padding:
+    env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+.wc-hud-bottom { position: fixed; left: 0; right: 0; bottom: env(safe-area-inset-bottom, 0px); }
+.wc-hud-top    { position: fixed; left: 0; right: 0; top: env(safe-area-inset-top, 0px); }
+
+/* Touch targets and gestures. */
+html.is-touch button, html.is-touch [data-action] { min-height: 44px; min-width: 44px; }
+[data-action], .wc-nogesture { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+/* Show only what the device can use. */
+html.no-touch  .wc-touch-only { display: none !important; }
+html.is-touch  .wc-keyboard-hint { display: none !important; }
+html.no-fullscreen .wc-fullscreen-btn { display: none !important; }
+
+/* CRT scanlines, off until the user opts in with .scanlines-active. */
+.wc-crt { position: relative; }
+.wc-crt::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px);
+}
+.wc-crt.scanlines-active::after { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

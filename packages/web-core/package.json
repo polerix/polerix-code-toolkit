@@ -1,0 +1,14 @@
+{
+  "name": "@polerix/web-core",
+  "version": "1.0.0",
+  "description": "Shared browser runtime for Polerix sites: capability detection and adaptation, HiDPI canvas, game loop, audio unlock, unified input actions, safe storage, cross-window sync, and HTML-escaping security helpers",
+  "type": "module",
+  "main": "index.mjs",
+  "style": "web-core.css",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "keywords": ["mobile", "desktop", "capabilities", "canvas", "audio", "input", "security", "csp"],
+  "author": "Polerix",
+  "license": "MIT"
+}
