@@ -4,5 +4,10 @@
   "branch": "steward/housekeeping",
   "skipRepos": [],
   "maxRepoSizeKbForSecretScan": 300000,
-  "secretIgnore": {}
+  "secretIgnore": {},
+  "license": {
+    "spdx": "MIT",
+    "holder": "Polerix",
+    "year": 2026
+  }
 }

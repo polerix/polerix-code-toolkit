@@ -130,7 +130,7 @@ async function auditAll() {
     let manifest = null;
     if (repo.paths.includes('polerix.json')) manifest = parseManifest(await readFile(repo, 'polerix.json') ?? '');
     const skip = manifest?.skip ?? [];
-    const findings = auditRepo({ meta: repo.meta, paths: repo.paths, skip });
+    const findings = auditRepo({ meta: repo.meta, paths: repo.paths, skip, license: cfg.license ?? null });
     await protectServedDependencies(repo, findings);
     const sub = skip === 'all' ? { findings: [] } : await planSubscription(repo, manifest, tags);
     findings.push(...sub.findings.filter((f) => skip === 'all' || !skip.includes(f.id)));
@@ -166,6 +166,7 @@ async function applyRepo(res) {
     else {
       const body = [`Automated housekeeping by the Polerix steward.`, '',
         ...res.findings.filter(isFileFix).map((f) => `- **${f.id}**: ${f.message}`), '',
+        ...(res.findings.some((f) => f.needsReview) ? ['**Needs your review before merging (license):** this repo ' + res.findings.find((f) => f.needsReview).reviewNote + '. An MIT license covers only your own original work, not third-party media, fonts or saved pages. Merge only if you own or may relicense everything in this repo, or remove/replace those files first.', ''] : []),
         ...(removes.some(isDependencyPath) ? ['**After merging:** pulling this deletes the tracked `node_modules`/venv folders from your local copy. Run `npm install` (or recreate the venv) afterwards.', ''] : []),
         'Review, then merge or close. Closing declines these findings until they change.', marker].join('\n') + footer;
       await gh.commitChanges(cfg.owner, res.name, { base: res.meta.branch, branch: cfg.branch, adds, removes, message: `chore(steward): ${ids.join(', ')}` });
@@ -209,7 +210,7 @@ function report(results) {
         const detail = showDetails || r.meta.visibility !== 'public' ? ` (${f.secrets.map((s) => `${s.path}:${s.line} ${s.rule}`).join('; ')})` : '';
         return `**${f.id}** x${f.secrets.length}${detail}`;
       }
-      return f.id;
+      return f.needsReview ? `${f.id} (REVIEW: third-party media)` : f.id;
     });
     lines.push(`| ${label(r)} | ${items.join(', ') || 'clean'} | ${r.subscribed ? 'yes' : r.optOut ? 'opted out' : 'no'} |`);
   }

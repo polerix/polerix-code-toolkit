@@ -120,3 +120,20 @@ test('scrubMessage hides repo names in CI error text only', async () => {
   assert.equal(scrubMessage(msg, false), msg);
   assert.ok(!scrubMessage(msg, true).includes('secret-project'));
 });
+
+test('license: added when configured, held for review if the repo bundles third-party media, report-only otherwise', async () => {
+  const { thirdPartyPaths } = await import('../lib/checks.mjs');
+  const { mitLicense } = await import('../lib/templates.mjs');
+  const lic = { spdx: 'MIT', holder: 'Polerix', year: 2026 };
+  const base = ['.gitignore', 'README.md', 'SECURITY.md', 'index.html'];
+  const plain = auditRepo({ meta: meta(), paths: base, license: lic }).find((f) => f.id === 'license-missing');
+  assert.equal(plain.fix.add.path, 'LICENSE'); assert.equal(plain.needsReview, false);
+  assert.match(plain.fix.add.content, /^MIT License\n\nCopyright \(c\) 2026 Polerix\n/);
+  assert.match(plain.fix.add.content, /THE SOFTWARE IS PROVIDED "AS IS"/);
+  const media = auditRepo({ meta: meta(), paths: [...base, 'font.ttf', 'music/track.mp3'], license: lic }).find((f) => f.id === 'license-missing');
+  assert.equal(media.needsReview, true); assert.match(media.reviewNote, /font\.ttf/);
+  assert.equal(auditRepo({ meta: meta(), paths: base }).find((f) => f.id === 'license-missing').fix, undefined);
+  assert.ok(!auditRepo({ meta: meta(), paths: [...base, 'LICENSE'], license: lic }).some((f) => f.id === 'license-missing'));
+  assert.deepEqual(thirdPartyPaths(['a.js', 'Site_files/x.js', 'x.MP4', 'old/_legacy_dump/y.js']).sort(), ['Site_files/x.js', 'old/_legacy_dump/y.js', 'x.MP4'].sort());
+  assert.ok(mitLicense(lic).endsWith('SOFTWARE.\n'));
+});
