@@ -17,7 +17,7 @@ It only uses the GitHub API. It never touches your local working copies.
 | Shared-feature pin behind the release | PR bumps it within the range in `polerix.json` |
 | Possible secret in the default branch | **Never auto-fixed.** Fails the run so GitHub emails you. Private repos also get an issue with locations |
 | Tracked `.env` / `.pem` / `id_rsa` | Flagged critical, never auto-deleted |
-| No `LICENSE` | Reported only. Choosing a license is your decision |
+| No `LICENSE` | PR adds the license set in `steward/config.json` (`license`: MIT, holder, year). If the repo bundles media, fonts or saved third-party pages, the PR is flagged **Needs your review**, because MIT covers only your own work. Remove `license` from the config to go back to report-only |
 
 Rules it follows: one PR per repo on the branch `steward/housekeeping`; never pushes to a default branch; only ever force-updates its own branch; a PR you close is not reopened until the findings change; `{"steward": false}` in a repo's `polerix.json` (or `"skip": ["readme-missing"]`) opts out.
 

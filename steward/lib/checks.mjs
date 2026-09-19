@@ -1,12 +1,16 @@
 // Pure audit logic: given a repo's file list and metadata, return findings.
 // A finding may carry a `fix`: { add: {path, content} } | { remove: path } | { api: 'secret-scanning' }.
 
-import { gitignoreFor, readmeFor, securityPolicyFor, dependabotFor } from './templates.mjs';
+import { gitignoreFor, readmeFor, securityPolicyFor, dependabotFor, mitLicense } from './templates.mjs';
 
 const JUNK = /(^|\/)(\.DS_Store|__pycache__\/.*|node_modules\/.*|\.venv\/.*|venv\/.*)$/;
 const SECRET_FILE = /(^|\/)(\.env(\.(?!example$)[^/]+)?|[^/]*\.pem|[^/]*\.p12|id_rsa[^/]*)$/;
 
-export function auditRepo({ meta, paths, skip = [] }) {
+// Bundled media, fonts and saved third-party pages: an MIT licence on the repo would not cover them.
+const THIRD_PARTY = /(\.(mp3|mp4|m4a|wav|ogg|flac|mov|avi|mkv|ttf|otf|woff2?|psd|ai|fbx|blend)$|_files\/|_legacy_dump\/)/i;
+export const thirdPartyPaths = (paths) => paths.filter((p) => THIRD_PARTY.test(p));
+
+export function auditRepo({ meta, paths, skip = [], license = null }) {
   const out = [];
   const add = (f) => { if (skip !== 'all' && !skip.includes(f.id)) out.push(f); };
   const has = (re) => paths.some((p) => re.test(p));
@@ -25,7 +29,13 @@ export function auditRepo({ meta, paths, skip = [] }) {
     if (content) add({ id: 'dependabot-missing', severity: 'low', message: 'No Dependabot config for detected ecosystems', fix: { add: { path: '.github/dependabot.yml', content } } });
   }
   if (!has(/^licen[cs]e(\.md|\.txt)?$/i)) {
-    add({ id: 'license-missing', severity: 'info', message: 'No LICENSE (owner decision, not auto-added)' });
+    const held = thirdPartyPaths(paths);
+    if (!license) add({ id: 'license-missing', severity: 'info', message: 'No LICENSE (owner decision, not auto-added)' });
+    else add({
+      id: 'license-missing', severity: 'low', message: `No LICENSE: adds ${license.spdx}`, needsReview: held.length > 0,
+      reviewNote: held.length ? `bundles ${held.length} media/font/saved-page file(s), e.g. ${held.slice(0, 2).join(', ')}` : undefined,
+      fix: { add: { path: 'LICENSE', content: mitLicense(license) } },
+    });
   }
 
   const secretFiles = paths.filter((p) => SECRET_FILE.test(p));
