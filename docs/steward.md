@@ -11,13 +11,15 @@ It only uses the GitHub API. It never touches your local working copies.
 | No `.gitignore` | PR adds a stack-aware one (Node / Python / Xcode / macOS, credentials always ignored) |
 | No `README.md` | PR adds a stub from the repo description |
 | No `SECURITY.md` (public repos) | PR adds a policy that points to private vulnerability reporting |
-| Node / pip / Actions but no `dependabot.yml` | PR adds weekly Dependabot |
+| Node / pip / Actions but no `dependabot.yml` | PR adds monthly Dependabot, one grouped PR per ecosystem (minor/patch; majors open their own). Only in repos listed in `fixScope`; elsewhere it is reported, not fixed |
 | `.DS_Store`, `node_modules`, `__pycache__`, venv tracked | PR removes them from the index (files stay in history) |
 | Secret scanning / push protection off (public repos) | Enables them, plus Dependabot security updates |
 | Shared-feature pin behind the release | PR bumps it within the range in `polerix.json` |
 | Possible secret in the default branch | **Never auto-fixed.** Fails the run so GitHub emails you. Private repos also get an issue with locations |
 | Tracked `.env` / `.pem` / `id_rsa` | Flagged critical, never auto-deleted |
 | No `LICENSE` | PR adds the license set in `steward/config.json` (`license`: MIT, holder, year). If the repo bundles media, fonts or saved third-party pages, the PR is flagged **Needs your review**, because MIT covers only your own work. Remove `license` from the config to go back to report-only |
+
+`steward/config.json` can scope a check's fix with `fixScope`: `{ "dependabot-missing": ["repo-a", "repo-b"] }`. The check still runs everywhere and shows in the report as `(report only)`, but `apply` only opens a PR for it in the listed repos.
 
 Rules it follows: one PR per repo on the branch `steward/housekeeping`; never pushes to a default branch; only ever force-updates its own branch; a PR you close is not reopened until the findings change; `{"steward": false}` in a repo's `polerix.json` (or `"skip": ["readme-missing"]`) opts out.
 

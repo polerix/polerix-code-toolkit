@@ -79,7 +79,8 @@ export function dependabotFor(paths) {
   if (paths.includes('package.json')) eco.push('npm');
   if (paths.includes('requirements.txt')) eco.push('pip');
   if (!eco.length) return null;
-  const body = eco.map((e) => `  - package-ecosystem: "${e}"\n    directory: "/"\n    schedule:\n      interval: "weekly"\n    open-pull-requests-limit: 3`).join('\n');
+  // Monthly, one grouped PR per ecosystem for minor/patch; majors stay out of the group and open their own PR.
+  const body = eco.map((e) => `  - package-ecosystem: "${e}"\n    directory: "/"\n    schedule:\n      interval: "monthly"\n    open-pull-requests-limit: 3\n    groups:\n      ${e === 'github-actions' ? 'actions' : e}:\n        patterns:\n          - "*"\n        update-types:\n          - "minor"\n          - "patch"`).join('\n');
   return `version: 2\nupdates:\n${body}\n`;
 }
 

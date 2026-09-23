@@ -4,6 +4,7 @@ const FAKE_AWS = 'AKIA' + 'ABCDEFGHIJKLMNOP'; // assembled at runtime so the ste
 import { scanText, isScannable } from '../lib/secrets.mjs';
 import { auditRepo, isDependencyPath, textReferencesDeps } from '../lib/checks.mjs';
 import { gitignoreFor, readmeFor, dependabotFor, securityPolicyFor } from '../lib/templates.mjs';
+import { scopeFixes } from '../lib/checks.mjs';
 import { parseSemver, compareSemver, satisfies, latestWithin, latestOverall, bumpPins, findPins, parseManifest } from '../lib/subscribe.mjs';
 
 const meta = (o = {}) => ({ name: 'demo', owner: 'polerix', description: 'A demo', visibility: 'public', hasPages: true, security: { secret_scanning: { status: 'enabled' }, secret_scanning_push_protection: { status: 'enabled' } }, ...o });
@@ -136,4 +137,30 @@ test('license: added when configured, held for review if the repo bundles third-
   assert.ok(!auditRepo({ meta: meta(), paths: [...base, 'LICENSE'], license: lic }).some((f) => f.id === 'license-missing'));
   assert.deepEqual(thirdPartyPaths(['a.js', 'Site_files/x.js', 'x.MP4', 'old/_legacy_dump/y.js']).sort(), ['Site_files/x.js', 'old/_legacy_dump/y.js', 'x.MP4'].sort());
   assert.ok(mitLicense(lic).endsWith('SOFTWARE.\n'));
+});
+
+test('scopeFixes: a scoped check keeps its fix only in the listed repos and is report-only elsewhere', () => {
+  const finding = { id: 'dependabot-missing', severity: 'low', message: 'x', fix: { add: { path: '.github/dependabot.yml', content: 'c' } } };
+  const other = { id: 'readme-missing', severity: 'low', message: 'y', fix: { add: { path: 'README.md', content: 'r' } } };
+  const scope = { 'dependabot-missing': ['touski'] };
+  const inList = scopeFixes([finding, other], 'touski', scope);
+  assert.ok(inList[0].fix && !inList[0].reportOnly);
+  const outside = scopeFixes([finding, other], 'pdp1173-sim', scope);
+  assert.equal(outside[0].id, 'dependabot-missing');
+  assert.equal(outside[0].fix, undefined);
+  assert.equal(outside[0].reportOnly, true);
+  assert.deepEqual(outside[1], other, 'unscoped checks are untouched');
+  assert.ok(!('fix' in outside[0]) && finding.fix, 'input is not mutated');
+  assert.deepEqual(scopeFixes([finding], 'anything', {}), [finding], 'no scope configured, no change');
+  assert.deepEqual(scopeFixes([finding], 'anything'), [finding]);
+});
+
+test('dependabot template: monthly, one grouped PR per ecosystem, majors excluded, limit 3', () => {
+  const y = dependabotFor(['package.json', 'requirements.txt', '.github/workflows/ci.yml']);
+  assert.equal((y.match(/interval: "monthly"/g) || []).length, 3);
+  assert.ok(!/weekly/.test(y));
+  assert.equal((y.match(/open-pull-requests-limit: 3/g) || []).length, 3);
+  assert.equal((y.match(/update-types:\n\s+- "minor"\n\s+- "patch"/g) || []).length, 3);
+  assert.ok(!/major/.test(y.replace(/^.*#.*$/gm, '')), 'majors are never listed in a group');
+  assert.match(y, /groups:\n\s+actions:/);
 });

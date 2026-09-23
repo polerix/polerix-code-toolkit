@@ -15,7 +15,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { createClient } from './lib/github.mjs';
-import { auditRepo, isFileFix, isDependencyPath, textReferencesDeps } from './lib/checks.mjs';
+import { auditRepo, isFileFix, isDependencyPath, textReferencesDeps, scopeFixes } from './lib/checks.mjs';
 import { scanText, isScannable } from './lib/secrets.mjs';
 import { displayName, scrubMessage } from './lib/redact.mjs';
 import { parseManifest, findPins, bumpPins, latestWithin, latestOverall, parseSemver, compareSemver } from './lib/subscribe.mjs';
@@ -130,7 +130,7 @@ async function auditAll() {
     let manifest = null;
     if (repo.paths.includes('polerix.json')) manifest = parseManifest(await readFile(repo, 'polerix.json') ?? '');
     const skip = manifest?.skip ?? [];
-    const findings = auditRepo({ meta: repo.meta, paths: repo.paths, skip, license: cfg.license ?? null });
+    const findings = scopeFixes(auditRepo({ meta: repo.meta, paths: repo.paths, skip, license: cfg.license ?? null }), r.name, cfg.fixScope);
     await protectServedDependencies(repo, findings);
     const sub = skip === 'all' ? { findings: [] } : await planSubscription(repo, manifest, tags);
     findings.push(...sub.findings.filter((f) => skip === 'all' || !skip.includes(f.id)));
@@ -210,6 +210,7 @@ function report(results) {
         const detail = showDetails || r.meta.visibility !== 'public' ? ` (${f.secrets.map((s) => `${s.path}:${s.line} ${s.rule}`).join('; ')})` : '';
         return `**${f.id}** x${f.secrets.length}${detail}`;
       }
+      if (f.reportOnly) return `${f.id} (report only)`;
       return f.needsReview ? `${f.id} (REVIEW: third-party media)` : f.id;
     });
     lines.push(`| ${label(r)} | ${items.join(', ') || 'clean'} | ${r.subscribed ? 'yes' : r.optOut ? 'opted out' : 'no'} |`);

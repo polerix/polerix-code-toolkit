@@ -9,5 +9,15 @@
     "spdx": "MIT",
     "holder": "Polerix",
     "year": 2026
+  },
+  "fixScope": {
+    "dependabot-missing": [
+      "touski",
+      "SpinnerCockpit",
+      "Squarewatch",
+      "big0time",
+      "ChunkyMatrix",
+      "comic-press"
+    ]
   }
 }

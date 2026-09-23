@@ -62,3 +62,14 @@ export const isDependencyPath = (p) => DEPENDENCY_PATH.test(p);
 export const textReferencesDeps = (text) => /(^|[^\w-])(\.\/|\/|\.\.\/)?node_modules\//.test(text);
 
 export const isFileFix = (f) => Boolean(f.fix?.add || f.fix?.remove);
+
+// config.fixScope: { "<finding id>": ["repo", ...] }. A scoped check only auto-fixes in the listed repos.
+// Everywhere else the finding is still reported, but its fix is dropped, so `apply` opens no PR for it.
+export function scopeFixes(findings, repoName, fixScope = {}) {
+  return findings.map((f) => {
+    const allowed = fixScope?.[f.id];
+    if (!allowed || allowed.includes(repoName) || !f.fix) return f;
+    const { fix, ...rest } = f;
+    return { ...rest, reportOnly: true };
+  });
+}
